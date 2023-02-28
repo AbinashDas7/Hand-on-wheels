@@ -1,0 +1,71 @@
+
+$whatreturn = '';
+$whatreturn = checkIsAlreadyRead($_SESSION["loginid"],$seminarid,$fetchid);
+
+if($whatreturn==1){ //already
+
+$insertreadingstatus = "UPDATE tbl_reading_status SET reading_starttime=?,insert_date=? WHERE userid=? AND courseid=? AND topicid=?";	
+	
+}else if($whatreturn==2){ //not read yet
+$insertreadingstatus = "INSERT INTO tbl_reading_status SET userid=?,courseid=?,topicid=?,when_read=?,reading_starttime=?,ipaddress=?,insert_date=?";	
+}
+
+if($stmt = $conn->prepare($insertreadingstatus)){
+	
+if($whatreturn==1){ //already, OLD
+
+
+
+$stmt -> bind_param('ssiii',$todaysdate,$todaysdate,$_SESSION["loginid"],$seminarid,$fetchid);
+
+}else if($whatreturn==2){ //not read yet, NEW
+
+$stmt -> bind_param('iiissss',$_SESSION["loginid"],$seminarid,$fetchid,$todaysdate,$todaysdate,$ipaddressofuser,$todaysdate);
+ 	
+}
+$ipaddressofuser = get_client_ip();
+ 
+if($stmt -> execute()){	
+$stmt -> close();	
+
+
+if(!empty($sem_part1) && !empty($sem_part2)){ //start
+//UPDATE start
+
+//$start = strtotime('17-10-2020 05:21:35');
+//$end = strtotime('17-10-2020 06:21:36');
+//$second = (int)(($end - $start));
+//$pastreadtime = getTotalTime();
+
+$total_time_spend = (int)strtotime(date('d-m-Y H:i:s',strtotime($todaysdate)))-strtotime(date('d-m-Y H:i:s',strtotime($sem_part3)));
+
+$updatereadingstatus = "UPDATE tbl_reading_status SET reading_endtime=?,ipaddress=?,total_time_spend=? WHERE userid=? AND courseid=? AND topicid=?";
+
+if($stmt = $conn->prepare($updatereadingstatus)){
+
+$stmt -> bind_param('sssiii',$todaysdate,$_SESSION['just_last_topic'],$total_time_spend,$_SESSION["loginid"],$sem_part1,$sem_part2);
+
+$ipaddressofuser = get_client_ip();
+ 
+if($stmt -> execute()){	
+$stmt -> close();
+
+}else{
+die("Ececute failed: ".$stmt->error);//TEST
+}
+}else{
+die("Prepare failed: ".$conn->error); 
+}
+
+//UPDATE end	
+	
+} //end 
+ 
+
+}else{
+die("Ececute failed: ".$stmt->error);//TEST
+}
+}else{
+die("Prepare failed: ".$conn->error); 
+}
+ 
